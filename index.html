@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Billar Pro - Lobby Principal</title>
+    <title>Billar Pro - Lobby</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -14,109 +14,112 @@
             theme: {
                 extend: {
                     colors: {
-                        darkBg: '#0b0f19',
-                        panelBg: '#131b2f',
-                        panelBgLight: '#1e2947',
-                        accentGold: '#d4af37',
+                        arbzerDark: '#0b0c1b',
+                        arbzerPanel: '#13152d',
+                        arbzerPanelLight: '#1c1e40',
+                        arbzerGold: '#d4af37',
+                        arbzerPurple: '#3b255e'
                     }
                 }
             }
         }
     </script>
 </head>
-<body class="bg-darkBg text-white font-sans h-screen overflow-hidden">
+<body class="bg-arbzerDark text-white font-sans h-screen overflow-hidden flex flex-col select-none">
 
-    <!-- PANTALLA DE LOGIN / REGISTRO -->
-    <div id="authScreen" class="absolute inset-0 z-50 bg-darkBg flex items-center justify-center">
-        <div class="bg-panelBg p-8 rounded-xl shadow-2xl w-96 border border-panelBgLight">
-            <h2 class="text-3xl font-bold text-center mb-6 text-white"><span class="text-blue-500">8 BALL</span> PRO</h2>
-            <div id="loginForm" class="space-y-4">
-                <input type="email" id="email" placeholder="Correo Electrónico" class="w-full bg-slate-800 text-white p-3 rounded outline-none border border-slate-700 focus:border-blue-500">
-                <input type="password" id="password" placeholder="Contraseña" class="w-full bg-slate-800 text-white p-3 rounded outline-none border border-slate-700 focus:border-blue-500">
-                <input type="text" id="username" placeholder="Nombre de Usuario (Solo registro)" class="w-full bg-slate-800 text-white p-3 rounded outline-none border border-slate-700 focus:border-blue-500 hidden">
-                <button onclick="login()" class="w-full bg-blue-600 hover:bg-blue-700 p-3 rounded font-bold transition">Ingresar</button>
-                <button onclick="toggleRegister()" id="btnToggle" class="w-full bg-slate-700 hover:bg-slate-600 p-3 rounded font-bold transition">Crear cuenta nueva</button>
-            </div>
-            <p id="authError" class="text-red-500 text-center mt-4 text-sm"></p>
+    <!-- Auth Modal -->
+    <div id="authScreen" class="absolute inset-0 z-50 bg-arbzerDark flex items-center justify-center">
+        <div class="bg-arbzerPanel p-8 rounded-xl shadow-2xl w-96 border border-arbzerPanelLight">
+            <h2 class="text-2xl font-bold text-center mb-6">Acceso al Servidor</h2>
+            <input type="email" id="email" placeholder="Correo" class="w-full bg-arbzerDark text-white p-3 rounded mb-3 border border-arbzerPanelLight outline-none focus:border-indigo-500">
+            <input type="password" id="password" placeholder="Contraseña" class="w-full bg-arbzerDark text-white p-3 rounded mb-4 border border-arbzerPanelLight outline-none focus:border-indigo-500">
+            <button onclick="login()" class="w-full bg-indigo-600 hover:bg-indigo-700 p-3 rounded font-bold mb-2 transition">Ingresar</button>
+            <button onclick="register()" class="w-full bg-arbzerPanelLight hover:bg-slate-700 p-3 rounded font-bold transition">Registrar Cuenta</button>
         </div>
     </div>
 
-    <!-- LOBBY PRINCIPAL (Inspirado en Arbzer) -->
-    <div id="mainLobby" class="hidden h-full flex flex-col">
-        <!-- Header -->
-        <header class="h-16 bg-panelBg border-b border-panelBgLight flex items-center justify-between px-6">
-            <div class="flex items-center gap-4">
-                <i class="fa-solid fa-headset text-gray-400 text-xl"></i>
-            </div>
-            <div class="text-xl font-bold text-accentGold tracking-widest">BILLAR PRO</div>
-            <div class="flex items-center gap-4">
-                <button onclick="logout()" class="text-gray-400 hover:text-white"><i class="fa-solid fa-sign-out-alt"></i> Salir</button>
-            </div>
-        </header>
-
-        <!-- Contenido Principal -->
-        <div class="flex flex-1 overflow-hidden">
-            <!-- Sidebar Izquierda: Top Jugadores -->
-            <aside class="w-80 bg-panelBg border-r border-panelBgLight p-4 flex flex-col gap-4 overflow-y-auto">
-                <div class="flex bg-slate-800 rounded-lg p-1">
-                    <button class="flex-1 bg-panelBgLight text-white rounded py-2 text-sm font-bold shadow">Mejores Jugadores</button>
-                    <button class="flex-1 text-gray-400 py-2 text-sm font-bold">Concursantes</button>
-                </div>
-                <div class="bg-panelBgLight p-4 rounded-xl flex items-center justify-between">
-                    <div>
-                        <h3 class="text-lg font-bold text-white"><i class="fa-solid fa-trophy text-accentGold"></i> 100 MEJORES</h3>
-                        <p class="text-xs text-gray-400">SALÓN DE LA FAMA</p>
-                    </div>
-                </div>
-                <!-- Lista de Jugadores (Estática para diseño) -->
-                <div class="space-y-2" id="topPlayersList">
-                    <!-- Los jugadores se cargarían aquí -->
-                </div>
-            </aside>
-
-            <!-- Centro: Banners y Perfil -->
-            <main class="flex-1 flex flex-col p-4 gap-4 overflow-y-auto">
-                <!-- Banner Evento -->
-                <div class="h-64 rounded-xl bg-cover bg-center border border-panelBgLight relative overflow-hidden" style="background-image: url('https://images.unsplash.com/photo-1599577232204-7a353683fbe2?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80');">
-                    <div class="absolute inset-0 bg-gradient-to-r from-black/80 to-transparent p-8 flex flex-col justify-center">
-                        <h1 class="text-4xl font-bold text-white mb-2 shadow-sm">Torneo Oficial</h1>
-                        <p class="text-accentGold font-bold text-xl">Premios Exclusivos</p>
-                    </div>
-                </div>
-
-                <!-- Perfil del Jugador -->
-                <div class="bg-panelBg rounded-xl border border-panelBgLight p-6 flex flex-col items-center flex-1">
-                    <div class="w-24 h-24 rounded-full border-4 border-blue-500 overflow-hidden mb-4 relative shadow-[0_0_15px_rgba(59,130,246,0.5)]">
-                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=ZMATEO" alt="Avatar" class="w-full h-full object-cover">
-                    </div>
-                    <h2 id="displayUsername" class="text-2xl font-bold text-white">Z MATEO</h2>
-                    <p id="displayUid" class="text-xs text-gray-500 mb-6">@ID</p>
-                    
-                    <div class="w-full max-w-md bg-slate-800 rounded-full h-2.5 mb-2">
-                        <div class="bg-blue-600 h-2.5 rounded-full" style="width: 45%"></div>
-                    </div>
-                    <div class="w-full max-w-md flex justify-between text-xs text-gray-400 font-bold">
-                        <span>NIVEL 1</span>
-                        <span>450 / 1000 XP</span>
-                    </div>
-                </div>
-            </main>
-
-            <!-- Sidebar Derecha: Lista de Habitaciones/Salas -->
-            <aside class="w-96 bg-panelBg border-l border-panelBgLight flex flex-col">
-                <div class="p-4 border-b border-panelBgLight">
-                    <h3 class="font-bold text-gray-300 mb-4">LISTA DE HABITACIONES</h3>
-                    <div class="flex gap-2">
-                        <button class="flex-1 bg-slate-800 py-2 rounded text-gray-400 hover:text-white transition"><i class="fa-solid fa-users"></i></button>
-                        <button class="flex-1 bg-slate-800 py-2 rounded text-gray-400 hover:text-white transition"><i class="fa-solid fa-location-dot"></i></button>
-                        <button class="flex-[2] bg-emerald-500 py-2 rounded text-white font-bold hover:bg-emerald-600 transition"><i class="fa-solid fa-globe"></i> PÚBLICO</button>
-                    </div>
-                </div>
-                <div id="roomList" class="flex-1 overflow-y-auto p-2 space-y-1">
-                    <!-- Salas generadas por Firebase -->
-                </div>
-            </aside>
+    <!-- Top Header -->
+    <header class="h-14 bg-arbzerPanel border-b border-arbzerPanelLight flex items-center justify-between px-6 shrink-0">
+        <div class="flex items-center gap-4 text-gray-400">
+            <button class="hover:text-white transition"><i class="fa-solid fa-headset text-xl"></i></button>
         </div>
+        <div class="flex flex-col items-center">
+            <span class="text-xl font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-yellow-600">BILLAR PRO</span>
+        </div>
+        <div class="flex items-center gap-4 text-gray-400">
+            <button class="w-8 h-8 rounded bg-arbzerPanelLight hover:text-white transition"><i class="fa-regular fa-envelope"></i></button>
+            <button class="w-8 h-8 rounded bg-arbzerPanelLight hover:text-white transition"><i class="fa-solid fa-search"></i></button>
+            <button onclick="logout()" class="w-8 h-8 rounded bg-arbzerPanelLight hover:text-white transition"><i class="fa-solid fa-sign-out-alt"></i></button>
+        </div>
+    </header>
+
+    <!-- Main Layout -->
+    <div id="mainLobby" class="flex flex-1 overflow-hidden hidden">
+        
+        <!-- Left Sidebar: Leaderboards -->
+        <aside class="w-80 bg-arbzerPanel border-r border-arbzerPanelLight flex flex-col">
+            <div class="flex text-xs font-bold bg-arbzerDark p-1 m-2 rounded">
+                <button onclick="switchTab('topPlayers')" id="tabTopPlayers" class="flex-1 py-2 rounded bg-arbzerPurple text-white transition">Mejores Jugadores</button>
+                <button onclick="switchTab('topContestants')" id="tabTopContestants" class="flex-1 py-2 rounded text-gray-400 hover:text-white transition">Mejores concursantes</button>
+            </div>
+            
+            <div id="contentTopPlayers" class="flex-1 overflow-y-auto p-4 space-y-2">
+                <div class="bg-arbzerPanelLight rounded-lg p-4 mb-4 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-lg font-black"><i class="fa-solid fa-trophy text-arbzerGold mr-2"></i> 100 MEJORES</h3>
+                        <p class="text-[10px] text-gray-400">SALÓN DE LA FAMA</p>
+                    </div>
+                </div>
+                <!-- Lista en 0 -->
+                <ul id="leaderboardList" class="space-y-2 text-sm text-gray-500 text-center mt-10">
+                    <li>No hay datos registrados aún</li>
+                </ul>
+            </div>
+            
+            <div id="contentTopContestants" class="flex-1 overflow-y-auto p-4 hidden">
+                <p class="text-sm text-gray-500 text-center mt-10">Sin concursantes activos</p>
+            </div>
+        </aside>
+
+        <!-- Center: Banner & Profile -->
+        <main class="flex-1 flex flex-col p-4 gap-4 overflow-y-auto bg-arbzerDark">
+            <!-- Event Banner -->
+            <div class="h-48 rounded-xl bg-arbzerPanelLight relative overflow-hidden flex items-center justify-center border border-arbzerPanelLight">
+                <h2 class="text-3xl font-black text-gray-600">ÁREA DE EVENTOS Y BANNERS</h2>
+            </div>
+
+            <!-- Profile Info -->
+            <div class="bg-arbzerPanel rounded-xl border border-arbzerPanelLight p-6 flex flex-col items-center">
+                <div class="w-20 h-20 rounded-full border-2 border-indigo-500 flex items-center justify-center bg-arbzerDark mb-3 shadow-[0_0_15px_rgba(99,102,241,0.3)]">
+                    <i class="fa-solid fa-user-ninja text-3xl text-indigo-400"></i>
+                </div>
+                <h2 id="profileName" class="text-xl font-bold text-white mb-1">Cargando...</h2>
+                <p id="profileId" class="text-xs text-gray-500 mb-6">@ID</p>
+                
+                <div class="w-full max-w-md bg-arbzerDark rounded-full h-1.5 mb-2 relative">
+                    <div id="xpBar" class="bg-indigo-600 h-1.5 rounded-full absolute top-0 left-0" style="width: 0%"></div>
+                </div>
+                <div class="w-full max-w-md flex justify-between text-[10px] text-gray-400 font-bold uppercase">
+                    <span id="profileLevel"><i class="fa-solid fa-bolt text-indigo-500"></i> NIVEL 0</span>
+                    <span id="profileXp">0 / 500 XP</span>
+                </div>
+            </div>
+        </main>
+
+        <!-- Right Sidebar: Rooms -->
+        <aside class="w-80 bg-arbzerPanel border-l border-arbzerPanelLight flex flex-col">
+            <div class="p-4 border-b border-arbzerPanelLight">
+                <h3 class="text-xs font-bold text-gray-300 mb-3 uppercase tracking-wider">Lista de Habitaciones</h3>
+                <div class="flex gap-1 text-xs">
+                    <button class="flex-1 bg-arbzerDark py-2 rounded text-gray-400 hover:text-white transition"><i class="fa-solid fa-users"></i></button>
+                    <button class="flex-1 bg-arbzerDark py-2 rounded text-gray-400 hover:text-white transition"><i class="fa-solid fa-location-dot"></i></button>
+                    <button class="flex-[2] bg-emerald-500 py-2 rounded text-white font-bold hover:bg-emerald-600 transition"><i class="fa-solid fa-globe mr-1"></i> PÚBLICO</button>
+                </div>
+            </div>
+            <div id="roomList" class="flex-1 overflow-y-auto p-2 space-y-1">
+                <!-- Salas generadas dinámicamente -->
+            </div>
+        </aside>
     </div>
 
     <script>
@@ -124,61 +127,54 @@
             apiKey: "AIzaSyBgh5vREimBuNfQ2fJACahZyfze3upFNKg",
             authDomain: "billar-gz.firebaseapp.com",
             databaseURL: "https://billar-gz-default-rtdb.firebaseio.com",
-            projectId: "billar-gz",
-            storageBucket: "billar-gz.firebasestorage.app",
-            messagingSenderId: "897124469055",
-            appId: "1:897124469055:web:f19b6b8aad429ea9036b8a"
+            projectId: "billar-gz"
         };
-        firebase.initializeApp(firebaseConfig);
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
         const auth = firebase.auth();
 
-        let isRegistering = false;
+        // Control de Pestañas Fluidas
+        function switchTab(tab) {
+            document.getElementById('tabTopPlayers').classList.replace(tab === 'topPlayers' ? 'bg-arbzerDark' : 'bg-arbzerPurple', tab === 'topPlayers' ? 'bg-arbzerPurple' : 'bg-arbzerDark');
+            document.getElementById('tabTopPlayers').classList.toggle('text-white', tab === 'topPlayers');
+            document.getElementById('tabTopPlayers').classList.toggle('text-gray-400', tab !== 'topPlayers');
+            
+            document.getElementById('tabTopContestants').classList.replace(tab === 'topContestants' ? 'bg-arbzerDark' : 'bg-arbzerPurple', tab === 'topContestants' ? 'bg-arbzerPurple' : 'bg-arbzerDark');
+            document.getElementById('tabTopContestants').classList.toggle('text-white', tab === 'topContestants');
+            document.getElementById('tabTopContestants').classList.toggle('text-gray-400', tab !== 'topContestants');
 
-        function toggleRegister() {
-            isRegistering = !isRegistering;
-            document.getElementById('username').classList.toggle('hidden');
-            document.querySelector('#loginForm button:first-of-type').innerText = isRegistering ? 'Registrarse' : 'Ingresar';
-            document.getElementById('btnToggle').innerText = isRegistering ? 'Volver al Login' : 'Crear cuenta nueva';
+            document.getElementById('contentTopPlayers').classList.toggle('hidden', tab !== 'topPlayers');
+            document.getElementById('contentTopContestants').classList.toggle('hidden', tab !== 'topContestants');
         }
 
         function login() {
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            const username = document.getElementById('username').value;
-            const errorP = document.getElementById('authError');
-            
-            if(isRegistering) {
-                auth.createUserWithEmailAndPassword(email, password)
-                    .then((userCredential) => {
-                        return db.ref('usuarios/' + userCredential.user.uid).set({
-                            nombre: username || 'Jugador',
-                            nivel: 1,
-                            xp: 0,
-                            rol: 'user'
-                        });
-                    })
-                    .catch((error) => errorP.innerText = error.message);
-            } else {
-                auth.signInWithEmailAndPassword(email, password)
-                    .catch((error) => errorP.innerText = error.message);
-            }
+            auth.signInWithEmailAndPassword(document.getElementById('email').value, document.getElementById('password').value).catch(err => alert(err.message));
         }
 
-        function logout() {
-            auth.signOut();
+        function register() {
+            auth.createUserWithEmailAndPassword(document.getElementById('email').value, document.getElementById('password').value)
+                .then(cred => {
+                    db.ref('usuarios/' + cred.user.uid).set({ nombre: 'Nuevo Jugador', nivel: 0, xp: 0 });
+                }).catch(err => alert(err.message));
         }
 
-        auth.onAuthStateChanged((user) => {
+        function logout() { auth.signOut(); }
+
+        auth.onAuthStateChanged(user => {
             if (user) {
                 document.getElementById('authScreen').classList.add('hidden');
                 document.getElementById('mainLobby').classList.remove('hidden');
                 
-                db.ref('usuarios/' + user.uid).once('value').then((snapshot) => {
-                    const data = snapshot.val();
-                    document.getElementById('displayUsername').innerText = data?.nombre || 'Z MATEO';
-                    document.getElementById('displayUid').innerText = '@' + user.uid.substring(0, 8);
+                // Cargar perfil en 0
+                db.ref('usuarios/' + user.uid).on('value', snap => {
+                    const data = snap.val() || { nombre: 'Jugador', nivel: 0, xp: 0 };
+                    document.getElementById('profileName').innerText = data.nombre;
+                    document.getElementById('profileId').innerText = '@' + user.uid.substring(0, 10);
+                    document.getElementById('profileLevel').innerHTML = `<i class="fa-solid fa-bolt text-indigo-500"></i> NIVEL ${data.nivel}`;
+                    document.getElementById('profileXp').innerText = `${data.xp} / 500 XP`;
+                    document.getElementById('xpBar').style.width = `${(data.xp / 500) * 100}%`;
                 });
+
                 cargarSalas();
             } else {
                 document.getElementById('authScreen').classList.remove('hidden');
@@ -187,35 +183,27 @@
         });
 
         function cargarSalas() {
-            db.ref('salas').on('value', (snapshot) => {
-                const roomList = document.getElementById('roomList');
-                roomList.innerHTML = '';
-                snapshot.forEach((child) => {
-                    const sala = child.val();
-                    const isVip = sala.tipo === 'vip' ? '<span class="text-accentGold text-[10px] ml-2 border border-accentGold px-1 rounded">VIP</span>' : '';
-                    
-                    roomList.innerHTML += `
-                        <div onclick="entrarSala('${child.key}')" class="flex items-center justify-between p-3 bg-panelBgLight hover:bg-slate-700 cursor-pointer rounded border border-transparent hover:border-slate-500 transition group">
+            db.ref('salas').on('value', snap => {
+                const list = document.getElementById('roomList');
+                list.innerHTML = '';
+                snap.forEach(child => {
+                    const s = child.val();
+                    list.innerHTML += `
+                        <div onclick="window.location.href='room.html?id=${child.key}'" class="flex items-center justify-between p-2 hover:bg-arbzerPanelLight cursor-pointer rounded border border-transparent hover:border-indigo-900 transition group">
                             <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded bg-slate-800 flex items-center justify-center text-accentGold border border-slate-600">
-                                    <i class="fa-solid fa-trophy"></i>
+                                <div class="w-8 h-8 rounded bg-arbzerDark flex items-center justify-center text-arbzerGold">
+                                    <i class="fa-solid fa-trophy text-xs"></i>
                                 </div>
                                 <div>
-                                    <h4 class="text-sm font-bold text-white group-hover:text-blue-400 transition">${sala.nombre} ${isVip}</h4>
-                                    <p class="text-xs text-gray-500">${sala.descripcion || 'General'}</p>
+                                    <h4 class="text-xs font-bold text-white group-hover:text-indigo-300 transition">${s.nombre}</h4>
+                                    <p class="text-[10px] text-gray-500">${s.tipo || 'General'}</p>
                                 </div>
                             </div>
-                            <div class="flex items-center gap-2 text-gray-400 text-sm font-bold">
-                                <i class="fa-solid fa-user"></i> ${sala.usuariosCount || 0}
-                            </div>
+                            <div class="text-[10px] text-gray-500 font-bold"><i class="fa-solid fa-user mr-1"></i> ${s.usuariosCount || 0}</div>
                         </div>
                     `;
                 });
             });
-        }
-
-        function entrarSala(roomId) {
-            window.location.href = `room.html?id=${roomId}`;
         }
     </script>
 </body>
