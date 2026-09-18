@@ -1,231 +1,222 @@
 <!DOCTYPE html>
-<html>
-    <head>
-        <title>8 BALL PRO - ONLINE</title>
-        <link rel="stylesheet" href="css/reset.css" type="text/css">
-        <link rel="stylesheet" href="css/main.css" type="text/css">
-        <link rel="stylesheet" href="css/orientation_utils.css" type="text/css">
-        <link rel="stylesheet" href="css/ios_fullscreen.css" type="text/css">
-        <link rel='shortcut icon' type='image/x-icon' href='./favicon.ico' />
-        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-
-        <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, minimal-ui" />
-	    <meta name="msapplication-tap-highlight" content="no"/>
-
-        <script type="text/javascript" src="js/jquery-3.2.1.min.js"></script>
-
-        <!-- FIREBASE SDKs -->
-        <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-        <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-        <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-
-        <script>
-            // 1. Inicializar Firebase
-            const firebaseConfig = {
-                apiKey: "AIzaSyBgh5vREimBuNfQ2fJACahZyfze3upFNKg",
-                authDomain: "billar-gz.firebaseapp.com",
-                databaseURL: "https://billar-gz-default-rtdb.firebaseio.com",
-                projectId: "billar-gz",
-                storageBucket: "billar-gz.firebasestorage.app",
-                messagingSenderId: "897124469055",
-                appId: "1:897124469055:web:f19b6b8aad429ea9036b8a",
-                measurementId: "G-F2Z6NLG3Z7"
-            };
-            firebase.initializeApp(firebaseConfig);
-            const db = firebase.database();
-            let currentRoomId = null;
-
-            // 2. Autenticación y Matchmaking
-            function iniciarSesionYBuscarSala() {
-                firebase.auth().signInAnonymously()
-                    .then(() => {
-                        console.log("Autenticado con éxito UID:", firebase.auth().currentUser.uid);
-                        buscarSalaDisponible();
-                    })
-                    .catch((error) => console.error("Error Auth:", error));
-            }
-
-            function buscarSalaDisponible() {
-                db.ref('salas').orderByChild('estado').equalTo('esperando').limitToFirst(1).once('value', snapshot => {
-                    if (snapshot.exists()) {
-                        snapshot.forEach(child => {
-                            currentRoomId = child.key;
-                            unirseASala(currentRoomId);
-                        });
-                    } else {
-                        console.log("No hay salas disponibles. Esperando en el menú.");
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Billar Pro - Lobby Principal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        darkBg: '#0b0f19',
+                        panelBg: '#131b2f',
+                        panelBgLight: '#1e2947',
+                        accentGold: '#d4af37',
                     }
-                });
-            }
-
-            function unirseASala(roomId) {
-                db.ref('salas/' + roomId).update({ 
-                    estado: 'en_juego', 
-                    jugador2: firebase.auth().currentUser.uid 
-                });
-                escucharTiros(roomId);
-                console.log("Unido a la sala:", roomId);
-            }
-
-            // 3. Escuchar tiros del oponente
-            function escucharTiros(roomId) {
-                db.ref('salas/' + roomId + '/tiro_actual').on('value', (snapshot) => {
-                    const datosTiro = snapshot.val();
-                    if (datosTiro && datosTiro.jugador !== firebase.auth().currentUser.uid) {
-                        console.log("Tiro recibido del oponente:", datosTiro);
-                        // Aquí deberás llamar a la función interna de tu motor físico para replicar el tiro
-                    }
-                });
-            }
-
-            // 4. Función global para enviar tiros (Llamar desde tu CStick.js)
-            window.enviarTiroMultijugador = function(fuerza, angulo, efectoX, efectoY) {
-                if(currentRoomId) {
-                    db.ref('salas/' + currentRoomId + '/tiro_actual').set({
-                        jugador: firebase.auth().currentUser.uid,
-                        fuerza: fuerza,
-                        angulo: angulo,
-                        efectoX: efectoX,
-                        efectoY: efectoY,
-                        timestamp: firebase.database.ServerValue.TIMESTAMP
-                    });
                 }
-            };
+            }
+        }
+    </script>
+</head>
+<body class="bg-darkBg text-white font-sans h-screen overflow-hidden">
 
-            // Iniciar conexión al cargar
-            $(document).ready(function(){
-                iniciarSesionYBuscarSala();
+    <!-- PANTALLA DE LOGIN / REGISTRO -->
+    <div id="authScreen" class="absolute inset-0 z-50 bg-darkBg flex items-center justify-center">
+        <div class="bg-panelBg p-8 rounded-xl shadow-2xl w-96 border border-panelBgLight">
+            <h2 class="text-3xl font-bold text-center mb-6 text-white"><span class="text-blue-500">8 BALL</span> PRO</h2>
+            <div id="loginForm" class="space-y-4">
+                <input type="email" id="email" placeholder="Correo Electrónico" class="w-full bg-slate-800 text-white p-3 rounded outline-none border border-slate-700 focus:border-blue-500">
+                <input type="password" id="password" placeholder="Contraseña" class="w-full bg-slate-800 text-white p-3 rounded outline-none border border-slate-700 focus:border-blue-500">
+                <input type="text" id="username" placeholder="Nombre de Usuario (Solo registro)" class="w-full bg-slate-800 text-white p-3 rounded outline-none border border-slate-700 focus:border-blue-500 hidden">
+                <button onclick="login()" class="w-full bg-blue-600 hover:bg-blue-700 p-3 rounded font-bold transition">Ingresar</button>
+                <button onclick="toggleRegister()" id="btnToggle" class="w-full bg-slate-700 hover:bg-slate-600 p-3 rounded font-bold transition">Crear cuenta nueva</button>
+            </div>
+            <p id="authError" class="text-red-500 text-center mt-4 text-sm"></p>
+        </div>
+    </div>
+
+    <!-- LOBBY PRINCIPAL (Inspirado en Arbzer) -->
+    <div id="mainLobby" class="hidden h-full flex flex-col">
+        <!-- Header -->
+        <header class="h-16 bg-panelBg border-b border-panelBgLight flex items-center justify-between px-6">
+            <div class="flex items-center gap-4">
+                <i class="fa-solid fa-headset text-gray-400 text-xl"></i>
+            </div>
+            <div class="text-xl font-bold text-accentGold tracking-widest">BILLAR PRO</div>
+            <div class="flex items-center gap-4">
+                <button onclick="logout()" class="text-gray-400 hover:text-white"><i class="fa-solid fa-sign-out-alt"></i> Salir</button>
+            </div>
+        </header>
+
+        <!-- Contenido Principal -->
+        <div class="flex flex-1 overflow-hidden">
+            <!-- Sidebar Izquierda: Top Jugadores -->
+            <aside class="w-80 bg-panelBg border-r border-panelBgLight p-4 flex flex-col gap-4 overflow-y-auto">
+                <div class="flex bg-slate-800 rounded-lg p-1">
+                    <button class="flex-1 bg-panelBgLight text-white rounded py-2 text-sm font-bold shadow">Mejores Jugadores</button>
+                    <button class="flex-1 text-gray-400 py-2 text-sm font-bold">Concursantes</button>
+                </div>
+                <div class="bg-panelBgLight p-4 rounded-xl flex items-center justify-between">
+                    <div>
+                        <h3 class="text-lg font-bold text-white"><i class="fa-solid fa-trophy text-accentGold"></i> 100 MEJORES</h3>
+                        <p class="text-xs text-gray-400">SALÓN DE LA FAMA</p>
+                    </div>
+                </div>
+                <!-- Lista de Jugadores (Estática para diseño) -->
+                <div class="space-y-2" id="topPlayersList">
+                    <!-- Los jugadores se cargarían aquí -->
+                </div>
+            </aside>
+
+            <!-- Centro: Banners y Perfil -->
+            <main class="flex-1 flex flex-col p-4 gap-4 overflow-y-auto">
+                <!-- Banner Evento -->
+                <div class="h-64 rounded-xl bg-cover bg-center border border-panelBgLight relative overflow-hidden" style="background-image: url('https://images.unsplash.com/photo-1599577232204-7a353683fbe2?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80');">
+                    <div class="absolute inset-0 bg-gradient-to-r from-black/80 to-transparent p-8 flex flex-col justify-center">
+                        <h1 class="text-4xl font-bold text-white mb-2 shadow-sm">Torneo Oficial</h1>
+                        <p class="text-accentGold font-bold text-xl">Premios Exclusivos</p>
+                    </div>
+                </div>
+
+                <!-- Perfil del Jugador -->
+                <div class="bg-panelBg rounded-xl border border-panelBgLight p-6 flex flex-col items-center flex-1">
+                    <div class="w-24 h-24 rounded-full border-4 border-blue-500 overflow-hidden mb-4 relative shadow-[0_0_15px_rgba(59,130,246,0.5)]">
+                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=ZMATEO" alt="Avatar" class="w-full h-full object-cover">
+                    </div>
+                    <h2 id="displayUsername" class="text-2xl font-bold text-white">Z MATEO</h2>
+                    <p id="displayUid" class="text-xs text-gray-500 mb-6">@ID</p>
+                    
+                    <div class="w-full max-w-md bg-slate-800 rounded-full h-2.5 mb-2">
+                        <div class="bg-blue-600 h-2.5 rounded-full" style="width: 45%"></div>
+                    </div>
+                    <div class="w-full max-w-md flex justify-between text-xs text-gray-400 font-bold">
+                        <span>NIVEL 1</span>
+                        <span>450 / 1000 XP</span>
+                    </div>
+                </div>
+            </main>
+
+            <!-- Sidebar Derecha: Lista de Habitaciones/Salas -->
+            <aside class="w-96 bg-panelBg border-l border-panelBgLight flex flex-col">
+                <div class="p-4 border-b border-panelBgLight">
+                    <h3 class="font-bold text-gray-300 mb-4">LISTA DE HABITACIONES</h3>
+                    <div class="flex gap-2">
+                        <button class="flex-1 bg-slate-800 py-2 rounded text-gray-400 hover:text-white transition"><i class="fa-solid fa-users"></i></button>
+                        <button class="flex-1 bg-slate-800 py-2 rounded text-gray-400 hover:text-white transition"><i class="fa-solid fa-location-dot"></i></button>
+                        <button class="flex-[2] bg-emerald-500 py-2 rounded text-white font-bold hover:bg-emerald-600 transition"><i class="fa-solid fa-globe"></i> PÚBLICO</button>
+                    </div>
+                </div>
+                <div id="roomList" class="flex-1 overflow-y-auto p-2 space-y-1">
+                    <!-- Salas generadas por Firebase -->
+                </div>
+            </aside>
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyBgh5vREimBuNfQ2fJACahZyfze3upFNKg",
+            authDomain: "billar-gz.firebaseapp.com",
+            databaseURL: "https://billar-gz-default-rtdb.firebaseio.com",
+            projectId: "billar-gz",
+            storageBucket: "billar-gz.firebasestorage.app",
+            messagingSenderId: "897124469055",
+            appId: "1:897124469055:web:f19b6b8aad429ea9036b8a"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const auth = firebase.auth();
+
+        let isRegistering = false;
+
+        function toggleRegister() {
+            isRegistering = !isRegistering;
+            document.getElementById('username').classList.toggle('hidden');
+            document.querySelector('#loginForm button:first-of-type').innerText = isRegistering ? 'Registrarse' : 'Ingresar';
+            document.getElementById('btnToggle').innerText = isRegistering ? 'Volver al Login' : 'Crear cuenta nueva';
+        }
+
+        function login() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const username = document.getElementById('username').value;
+            const errorP = document.getElementById('authError');
+            
+            if(isRegistering) {
+                auth.createUserWithEmailAndPassword(email, password)
+                    .then((userCredential) => {
+                        return db.ref('usuarios/' + userCredential.user.uid).set({
+                            nombre: username || 'Jugador',
+                            nivel: 1,
+                            xp: 0,
+                            rol: 'user'
+                        });
+                    })
+                    .catch((error) => errorP.innerText = error.message);
+            } else {
+                auth.signInWithEmailAndPassword(email, password)
+                    .catch((error) => errorP.innerText = error.message);
+            }
+        }
+
+        function logout() {
+            auth.signOut();
+        }
+
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                document.getElementById('authScreen').classList.add('hidden');
+                document.getElementById('mainLobby').classList.remove('hidden');
+                
+                db.ref('usuarios/' + user.uid).once('value').then((snapshot) => {
+                    const data = snapshot.val();
+                    document.getElementById('displayUsername').innerText = data?.nombre || 'Z MATEO';
+                    document.getElementById('displayUid').innerText = '@' + user.uid.substring(0, 8);
+                });
+                cargarSalas();
+            } else {
+                document.getElementById('authScreen').classList.remove('hidden');
+                document.getElementById('mainLobby').classList.add('hidden');
+            }
+        });
+
+        function cargarSalas() {
+            db.ref('salas').on('value', (snapshot) => {
+                const roomList = document.getElementById('roomList');
+                roomList.innerHTML = '';
+                snapshot.forEach((child) => {
+                    const sala = child.val();
+                    const isVip = sala.tipo === 'vip' ? '<span class="text-accentGold text-[10px] ml-2 border border-accentGold px-1 rounded">VIP</span>' : '';
+                    
+                    roomList.innerHTML += `
+                        <div onclick="entrarSala('${child.key}')" class="flex items-center justify-between p-3 bg-panelBgLight hover:bg-slate-700 cursor-pointer rounded border border-transparent hover:border-slate-500 transition group">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded bg-slate-800 flex items-center justify-center text-accentGold border border-slate-600">
+                                    <i class="fa-solid fa-trophy"></i>
+                                </div>
+                                <div>
+                                    <h4 class="text-sm font-bold text-white group-hover:text-blue-400 transition">${sala.nombre} ${isVip}</h4>
+                                    <p class="text-xs text-gray-500">${sala.descripcion || 'General'}</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2 text-gray-400 text-sm font-bold">
+                                <i class="fa-solid fa-user"></i> ${sala.usuariosCount || 0}
+                            </div>
+                        </div>
+                    `;
+                });
             });
-        </script>
-        <!-- FIN FIREBASE -->
+        }
 
-        <script type="text/javascript" src="js/easeljs-NEXT.min.js"></script>
-        <script type="text/javascript" src="js/tweenjs.js"></script>
-        <script type="text/javascript" src="js/three.min.js"></script>
-        <script type="text/javascript" src="js/screenfull.js"></script>
-        <script type="text/javascript" src="js/sprintf.min.js"></script>
-        <script type="text/javascript" src="js/platform.js"></script>
-        <script type="text/javascript" src="js/ios_fullscreen.js"></script>
-        <script type="text/javascript" src="js/howler.min.js"></script>
-        <script type="text/javascript" src="js/ctl_utils.js"></script>
-        <script type="text/javascript" src="js/sprite_lib.js"></script>
-        <script type="text/javascript" src="js/settings.js"></script>
-        <script type="text/javascript" src="js/CAreYouSurePanel.js"></script>
-        <script type="text/javascript" src="js/CInputController.js"></script>
-        <script type="text/javascript" src="js/CLang.min.js"></script>
-        <script type="text/javascript" src="js/CPreloader.js"></script>
-        <script type="text/javascript" src="js/CMain.js"></script>
-        <script type="text/javascript" src="js/CTextButton.js"></script>
-        <script type="text/javascript" src="js/CGfxButton.js"></script>
-        <script type="text/javascript" src="js/CToggle.js"></script>
-        <script type="text/javascript" src="js/CMenu.js"></script>
-        <script type="text/javascript" src="js/CDifficultyMenu.js"></script>
-        <script type="text/javascript" src="js/CGame.js"></script>
-        <script type="text/javascript" src="js/CInterface.js"></script>
-        <script type="text/javascript" src="js/CScene.js"></script>
-        <script type="text/javascript" src="js/CCreditsPanel.js"></script>
-        <script type="text/javascript" src="js/CTable.js"></script>
-        <script type="text/javascript" src="js/CGUIExpandible.js"></script>
-        <script type="text/javascript" src="js/CEdge.js"></script>
-        <script type="text/javascript" src="js/CVector2.js"></script>
-        <script type="text/javascript" src="js/CMath.js"></script>
-        <script type="text/javascript" src="js/CCTLText.js"></script>
-        <script type="text/javascript" src="js/CBall.js"></script>
-        <script type="text/javascript" src="js/CStick.js"></script>
-        <script type="text/javascript" src="js/CPhysicsController.js"></script>
-        <script type="text/javascript" src="js/CPlayerGUI.js"></script>
-        <script type="text/javascript" src="js/CBallSpinGUI.js"></script>
-        <script type="text/javascript" src="js/CGameOverPanel.js"></script>
-        <script type="text/javascript" src="js/CHandBallDrag.js"></script>
-        <script type="text/javascript" src="js/CEffectText.js"></script>
-        <script type="text/javascript" src="js/CInteractiveHelp.js"></script>
-        <script type="text/javascript" src="js/CButLang.js"></script>
-        <script type="text/javascript" src="js/CRollingScore.js"></script>
-        <script type="text/javascript" src="js/CScoreGUI.js"></script>
-        <script type="text/javascript" src="js/CShotPowerBar.js"></script>
-        <script type="text/javascript" src="js/CLocalStorage.js"></script>
-        
-    </head>
-    <body ondragstart="return false;" ondrop="return false;" >
-	<div style="position: fixed; background-color: transparent; top: 0px; left: 0px; width: 100%; height: 100%"></div>
-          <script>
-            $(document).ready(function(){
-                     var oMain = new CMain({
-                                                audio_enable_on_startup:false, 
-                                                fullscreen:true,   
-                                                check_orientation:true, 
-                                                points_for_ball_pot: 20, 
-                                                points_for_fault: -40 
-                                        });
-                     
-                     $(oMain).on("start_session", function(evt) {
-                            if(getParamValue('ctl-arcade') === "true"){
-                                parent.__ctlArcadeStartSession();
-                            }
-                     });
-                     
-                    $(oMain).on("end_session", function(evt) {
-                           if(getParamValue('ctl-arcade') === "true"){
-                               parent.__ctlArcadeEndSession();
-                           }
-                    });
-
-                    $(oMain).on("save_score", function(evt,iScore) {
-                           if(getParamValue('ctl-arcade') === "true"){
-                               parent.__ctlArcadeSaveScore({score:iScore});
-                           }
-                    });
-
-                    $(oMain).on("start_level", function(evt, iLevel) {
-                           if(getParamValue('ctl-arcade') === "true"){
-                               parent.__ctlArcadeStartLevel({level:iLevel});
-                           }
-                    });
-
-                    $(oMain).on("end_level", function(evt, iLevel) {
-                           if(getParamValue('ctl-arcade') === "true"){
-                               parent.__ctlArcadeEndLevel({level:iLevel});
-                           }
-                    });
-                    
-                    $(oMain).on("restart_level", function (evt, iLevel) {
-                        if (getParamValue('ctl-arcade') === "true") {
-                            parent.__ctlArcadeRestartLevel({level: iLevel});
-                        }
-                    });
-                    
-                    $(oMain).on("show_interlevel_ad", function(evt) {
-                           if(getParamValue('ctl-arcade') === "true"){
-                               parent.__ctlArcadeShowInterlevelAD();
-                           }
-                    });
-                    
-                    $(oMain).on("share_event", function(evt, iScore) {
-                           if(getParamValue('ctl-arcade') === "true"){
-                               parent.__ctlArcadeShareEvent({   img: TEXT_SHARE_IMAGE,
-                                                                title: TEXT_SHARE_TITLE,
-                                                                msg: TEXT_SHARE_MSG1 + iScore + TEXT_SHARE_MSG2,
-                                                                msg_share: TEXT_SHARE_SHARE1 + iScore
-                                                            });                          
-                           }
-                    });
-					 
-                    if(isIOS()){
-                        setTimeout(function(){sizeHandler();},200); 
-                    }else{ 
-                        sizeHandler(); 
-                    } 
-           });
-        </script>
-        
-        <div class="check-fonts">
-            <p class="check-font-1">1</p>
-        </div> 
-        
-        <canvas id="canvas_game" class='ani_hack' width="1920" height="1080"> </canvas>
-        <canvas id="canvas_3d" class='ani_hack' width="1920" height="1080"> </canvas>
-        <canvas id="canvas_upper_3d" class='ani_hack upper_3d' width="1920" height="1080" > </canvas>
-        <div data-orientation="landscape" class="orientation-msg-container"><p class="orientation-msg-text">Please rotate your device</p></div>
-        <div id="block_game" style="position: fixed; background-color: transparent; top: 0px; left: 0px; width: 100%; height: 100%; display:none"></div>
-    </body>
+        function entrarSala(roomId) {
+            window.location.href = `room.html?id=${roomId}`;
+        }
+    </script>
+</body>
 </html>
